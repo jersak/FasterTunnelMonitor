@@ -15,7 +15,7 @@ const int MONITOR_WRITE_PORT = 50657;
 const int KEEP_ALIVE_TIMER_INTERVAL = 750;
 const int KILL_PROCESS_TIMER_INTERVAL = 750;
 
-const int MAX_MONITOR_ATTEMPTS = 2;
+const int MAX_MONITOR_ATTEMPTS = 4;
 
 LaClientMonitor::LaClientMonitor(QObject *parent)
     : QObject(parent)
