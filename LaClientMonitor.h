@@ -2,7 +2,7 @@
 #define LACLIENTMONITOR_H
 
 #include <QObject>
-#include <QSet>
+#include <QVector>
 
 class QUdpSocket;
 class QTimer;
@@ -14,12 +14,9 @@ class LaClientMonitor : public QObject
 public:
     LaClientMonitor(QObject *parent=0);
 
-    void startMonitor();
-
 private slots:
     void onClientResponse();
-    void onKillProcessTimeout();
-    void onKeepAliveTimeout();
+    void checkProcess();
 
 private:
     void killAllProcess();
@@ -31,10 +28,10 @@ private:
 
     int mFailtAttemptCount;
 
-    QSet<int> mProcessIdList;
+    QVector<int> mProcessIdList;
 
     QUdpSocket *mSocket;
-    QTimer *mKeepAliveTimer;
+    QTimer *mCheckProcessTimer;
     QTimer *mKillProcessTimer;
 
     // Log
