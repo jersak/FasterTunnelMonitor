@@ -9,44 +9,30 @@
 #include <QDir>
 #include <QDateTime>
 
-const int MONITOR_LISTEN_PORT = 50656;
-const int MONITOR_WRITE_PORT = 50657;
+const int SS5_LOG_LOCAL_PORT = 50666;
 
-const int CHECK_PROCESS_TIMER_INTERVAL = 1750;
-const int KILL_PROCESS_TIMER_INTERVAL = 750;
+const int CHECK_CLIENT_PROCESS_TIMER_INTERVAL = 3000;
 
-const int MAX_MONITOR_ATTEMPTS = 2;
+const int MAX_MONITOR_ATTEMPTS = 3;
 
 LaClientMonitor::LaClientMonitor(QObject *parent)
     : QObject(parent)
 {
-    mSocket = new QUdpSocket();
-    mSocket->bind(QHostAddress("127.0.0.1"), MONITOR_LISTEN_PORT);
-
     mFailtAttemptCount = 0;
 
     mCheckProcessTimer = new QTimer();
-    mCheckProcessTimer->setInterval(CHECK_PROCESS_TIMER_INTERVAL);
+    mCheckProcessTimer->setInterval(CHECK_CLIENT_PROCESS_TIMER_INTERVAL);
+
+    mReadProcessIdsTimer = new QTimer();
+    mReadProcessIdsTimer->setInterval(1000);
+    mReadProcessIdsTimer->start();
 
     mLogFile = NULL;
 
-    connect(mSocket, SIGNAL(readyRead()), this, SLOT(onClientResponse()));
     connect(mCheckProcessTimer, SIGNAL(timeout()), this, SLOT(checkProcess()));
+    connect(mReadProcessIdsTimer, SIGNAL(timeout()), this, SLOT(readProcessIds()));
 
     mCheckProcessTimer->start();
-}
-
-void LaClientMonitor::onClientResponse() {
-    QByteArray datagram;
-    datagram.resize(mSocket->pendingDatagramSize());
-    mSocket->readDatagram(datagram.data(), datagram.size());
-
-    QString r = QString(datagram.data());
-    QStringList stringList = r.split(",", QString::SkipEmptyParts);
-    mProcessIdList.clear();
-    foreach (QString stringId, stringList) {
-        mProcessIdList.append(stringId.toInt());
-    }
 }
 
 void LaClientMonitor::checkProcess()
@@ -68,6 +54,10 @@ void LaClientMonitor::checkProcess()
     else {
         qDebug() << "Faster Tunnel is NOT running";
         mFailtAttemptCount++;
+
+        writeLog("Failed to find client process ["
+                 + QString::number(mFailtAttemptCount) + " Attempts] - " + QString(list));
+
         if(mFailtAttemptCount >= MAX_MONITOR_ATTEMPTS) {
             writeLog("Client killed by FailAttempts");
             killAllProcess();
@@ -113,6 +103,7 @@ void LaClientMonitor::terminateSS5() {
     QProcess *p = new QProcess();
     p->start(path, params);
 }
+
 void LaClientMonitor::startNewLogFile() {
     QString fileName = "monitor_" + QDateTime::currentDateTime().toString("yyyy_MM_dd-hh_mm_ss") +
             ".log";
@@ -135,5 +126,22 @@ void LaClientMonitor::writeLog(QString log) {
     mLogFile->write(time.toUtf8() + log.toUtf8());
     mLogFile->write("\n");
     mLogFile->flush();
+}
+
+void LaClientMonitor::readProcessIds()
+{
+    QString path = qApp->applicationDirPath() + QDir::separator();
+    QString fileName = "pids.bin";
+
+    QFile * pIdsFile = new QFile(path + fileName);
+    QDir().mkdir(path);
+    if(pIdsFile->open(QFile::ReadOnly | QIODevice::Text)) {
+        mProcessIdList.clear();
+        QString pIds = QString(pIdsFile->readLine());
+        QStringList pIdsList = pIds.split(";", QString::SkipEmptyParts);
+        foreach (QString pid, pIdsList) {
+            mProcessIdList.append(pid.toInt());
+        }
+    }
 }
 

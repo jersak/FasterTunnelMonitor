@@ -15,8 +15,8 @@ public:
     LaClientMonitor(QObject *parent=0);
 
 private slots:
-    void onClientResponse();
     void checkProcess();
+    void readProcessIds();
 
 private:
     void killAllProcess();
@@ -31,8 +31,9 @@ private:
     QVector<int> mProcessIdList;
 
     QUdpSocket *mSocket;
+
     QTimer *mCheckProcessTimer;
-    QTimer *mKillProcessTimer;
+    QTimer *mReadProcessIdsTimer;
 
     // Log
     QFile *mLogFile;
