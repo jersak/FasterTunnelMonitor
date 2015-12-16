@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QDir>
 #include <QDateTime>
+#include <QSharedMemory>
 
 const int SS5_LOG_LOCAL_PORT = 50666;
 
@@ -18,6 +19,7 @@ const int MAX_MONITOR_ATTEMPTS = 3;
 LaClientMonitor::LaClientMonitor(QObject *parent)
     : QObject(parent)
 {
+
     mFailtAttemptCount = 0;
 
     mCheckProcessTimer = new QTimer();
@@ -29,14 +31,35 @@ LaClientMonitor::LaClientMonitor(QObject *parent)
 
     mLogFile = NULL;
 
+    startNewLogFile();
+
     connect(mCheckProcessTimer, SIGNAL(timeout()), this, SLOT(checkProcess()));
     connect(mReadProcessIdsTimer, SIGNAL(timeout()), this, SLOT(readProcessIds()));
+
+
+    QSharedMemory monitorsignature("61BB201D-3569-453e-9144-");
+    if(monitorsignature.create(512,QSharedMemory::ReadWrite)==true) {
+        monitorsignature.lock();
+        writeLog("Monitor iniciado.");
+    } else {
+        writeLog("Não foi possivel iniciar o monitor.");
+        exit(0);
+    }
 
     mCheckProcessTimer->start();
 }
 
 void LaClientMonitor::checkProcess()
 {
+    QSharedMemory shared("61BB200D-3579-453e-9044-");
+    if(shared.create(512,QSharedMemory::ReadWrite)==true) {
+        writeLog("Nao foi possivel encontrar o cliente. Finalizando.");
+        killAllProcess();
+    } else {
+        //writeLog("Cliente encontrado.");
+    }
+
+    /*
     QProcess process;
     process.setReadChannel(QProcess::StandardOutput);
     process.setReadChannelMode(QProcess::MergedChannels);
@@ -47,6 +70,7 @@ void LaClientMonitor::checkProcess()
 
     QByteArray list = process.readAll();
     QString processList = QString(list);
+
     if(processList.contains("FasterTunnelClient.exe")) {
         qDebug() << "Faster Tunnel is running";
         mFailtAttemptCount=0;
@@ -62,7 +86,7 @@ void LaClientMonitor::checkProcess()
             writeLog("Client killed by FailAttempts");
             killAllProcess();
         }
-    }
+    } */
 }
 
 void LaClientMonitor::killAllProcess() {

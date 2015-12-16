@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QVector>
+#include <QSharedMemory>
 
 class QUdpSocket;
 class QTimer;
