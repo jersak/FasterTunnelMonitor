@@ -36,15 +36,16 @@ LaClientMonitor::LaClientMonitor(QObject *parent)
     connect(mCheckProcessTimer, SIGNAL(timeout()), this, SLOT(checkProcess()));
     connect(mReadProcessIdsTimer, SIGNAL(timeout()), this, SLOT(readProcessIds()));
 
-
-    QSharedMemory monitorsignature("61BB201D-3569-453e-9144-");
+    /*
+    QSharedMemory monitorsignature;
+    monitorsignature.setKey("1234");
     if(monitorsignature.create(512,QSharedMemory::ReadWrite)==true) {
         monitorsignature.lock();
         writeLog("Monitor iniciado.");
     } else {
         writeLog("Não foi possivel iniciar o monitor.");
         exit(0);
-    }
+    } */
 
     mCheckProcessTimer->start();
 }
@@ -56,7 +57,7 @@ void LaClientMonitor::checkProcess()
         writeLog("Nao foi possivel encontrar o cliente. Finalizando.");
         killAllProcess();
     } else {
-        //writeLog("Cliente encontrado.");
+        //writeLog("Cliente encontrado." + shared.error());
     }
 
     /*
@@ -103,6 +104,15 @@ void LaClientMonitor::killAllProcess() {
 
         QString result = QString(p->readAllStandardOutput());
         qDebug() << "KillProcess: " << result;
+    }
+
+    QProcess *p1 = new QProcess(this);
+    QString cmd1="taskkill";
+    QStringList params1;
+    params1 << "/im" << "fcca.exe" << "/f";
+    p1->start(cmd1,params1);
+    if(!p1->waitForFinished()) {
+        delete p1;
     }
 
     qApp->quit();
@@ -166,6 +176,7 @@ void LaClientMonitor::readProcessIds()
         foreach (QString pid, pIdsList) {
             mProcessIdList.append(pid.toInt());
         }
+        pIdsFile->close();
     }
 }
 

@@ -14,18 +14,18 @@ class LaClientMonitor : public QObject
     Q_OBJECT
 public:
     LaClientMonitor(QObject *parent=0);
-
-private slots:
-    void checkProcess();
-    void readProcessIds();
-
-private:
     void killAllProcess();
     void disconnectSS5();
     void terminateSS5();
 
     void startNewLogFile();
     void writeLog(QString log);
+
+private slots:
+    void checkProcess();
+    void readProcessIds();
+
+private:
 
     int mFailtAttemptCount;
 
